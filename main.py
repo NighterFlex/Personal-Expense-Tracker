@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from db import db_connection
+
 class User:
     def __init__(self, user_id: int, username: str, password: str, email: str, total_amount: float ):
         self.user_id = user_id
@@ -10,13 +11,32 @@ class User:
 
 
 
+from datetime import date
+from db import get_connection
+
 class Expense:
-    def __init__(self, expense_id : int, amount : float, category : str, expense_date : date, description : str):
+    def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date = None):
         self.expense_id = expense_id
+        self.user_id = user_id  # link to a user by ID
         self.amount = amount
-        self.category = category
-        self.expense_date = expense_date
         self.description = description
+        self.expense_date = expense_date if expense_date else date.today()
+        
+        # Fetch categories from DB
+        self.categories = self.fetch_categories()
+        
+        # Validate category
+        if category not in self.categories:
+            raise ValueError(f"Category must be one of: {self.categories}")
+        self.category = category
+
+    def fetch_categories(self):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT category_name FROM categories")
+        categories = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return categories
 
 
 class ExpenseManager:
