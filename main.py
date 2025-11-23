@@ -1,6 +1,9 @@
 from datetime import datetime, date
 from db import db_connection
 
+conn = db_connection()
+cursor = conn.cursor()
+
 class User:
     def __init__(self, user_id: int, username: str, password: str, email: str, total_amount: float ):
         self.user_id = user_id
@@ -9,10 +12,6 @@ class User:
         self.email = email
         self.total_amount = total_amount
 
-
-
-from datetime import date
-from db import get_connection
 
 class Expense:
     def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date = None):
@@ -31,18 +30,39 @@ class Expense:
         self.category = category
 
     def fetch_categories(self):
-        conn = get_connection()
-        cursor = conn.cursor()
+        
         cursor.execute("SELECT category_name FROM categories")
         categories = [row[0] for row in cursor.fetchall()]
         conn.close()
         return categories
 
-
 class ExpenseManager:
     def __init__(self):
         self.expense_list: list[Expense] = []
-        self.total_expense = 0.00
+        self.total_expense = 0.0
+
+    def add_expense(self, expense: Expense):
+        self.expense_list.append(expense)
+        self.total_expense += expense.amount
+        
+        # Insert into single table
+        cursor.execute("""
+        INSERT INTO expenses (expense_id, user_id, amount, expense_date, category, description)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """, (expense.expense_id, expense.user_id, expense.amount, expense.expense_date, expense.category, expense.description))
+        
+        conn.commit()
+        print(f"Expense added successfully!")
+
+    def fetch_expenses_by_category(self, category: str):
+        cursor.execute("""
+        SELECT * FROM expenses WHERE category=%s ORDER BY expense_date
+        """, (category,))
+        return cursor.fetchall()
+
+    def fetch_all_expenses(self):
+        cursor.execute("SELECT * FROM expenses ORDER BY expense_date")
+        return cursor.fetchall()
 
 
 class Budgeting:
