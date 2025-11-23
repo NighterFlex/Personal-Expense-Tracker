@@ -1,5 +1,5 @@
 from datetime import datetime, date
-
+from db import db_connection
 class User:
     def __init__(self, user_id: int, username: str, password: str, email: str, total_amount: float ):
         self.user_id = user_id
