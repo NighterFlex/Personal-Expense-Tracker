@@ -1,18 +1,20 @@
-from datetime import datetime, date
+from datetime import date
 from db import db_connection
 
+# ---------- Global DB connection ----------
 conn = db_connection()
 cursor = conn.cursor()
 
+# ---------- User class ----------
 class User:
-    def __init__(self, user_id: int, username: str, password: str, email: str, total_amount: float ):
+    def __init__(self, user_id: int, username: str, password: str, email: str, total_amount: float):
         self.user_id = user_id
         self.username = username
         self.password = password
         self.email = email
         self.total_amount = total_amount
 
-
+# ---------- Expense class ----------
 class Expense:
     def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date = None, categories=None):
         self.expense_id = expense_id
@@ -29,13 +31,7 @@ class Expense:
             raise ValueError(f"Category must be one of: {self.categories}")
         self.category = category
 
-
-from db import db_connection
-
-# Global connection
-conn = db_connection()
-cursor = conn.cursor()
-
+# ---------- ExpenseManager class ----------
 class ExpenseManager:
     def __init__(self):
         self.expense_list: list[Expense] = []
@@ -95,3 +91,30 @@ class Budgeting:
         self.monthly_spending = 0.0
         self.weekly_spending = 0.0
         self.daily_spending = 0.0
+
+# ---------- Main Script ----------
+if __name__ == "__main__":
+    # Create ExpenseManager instance
+    manager = ExpenseManager()
+
+    # Fetch categories from DB for validation
+    categories = manager.fetch_categories()
+    print("Available categories:", categories)
+
+    # Take user input for a new expense
+    expense_id = int(input("Enter expense ID: "))
+    user_id = int(input("Enter your user ID: "))
+    amount = float(input("Enter amount: "))
+    category = input("Enter category (must be one of above): ")
+    description = input("Enter description: ")
+
+    # Create Expense object, passing categories for validation
+    expense = Expense(expense_id, user_id, amount, category, description, categories=categories)
+
+    # Add expense to SQL and in-memory list
+    manager.add_expense(expense)
+
+    # Display all expenses from SQL
+    print("\nAll Expenses in DB:")
+    for e in manager.fetch_all_expenses():
+        print(e)
