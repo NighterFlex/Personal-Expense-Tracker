@@ -1,4 +1,6 @@
 from datetime import date
+# from typing import Optional
+
 from db import db_connection
 
 # ---------- Global DB connection ----------
@@ -14,9 +16,33 @@ class User:
         self.email = email
         self.total_amount = total_amount
 
+    def register(self):
+        cursor.execute("""
+        INSERT INTO users (user_id, username, password, email, total_amount)
+        VALUES (%s, %s, %s, %s, %s)
+        """, (self.user_id, self.username, self.password, self.email, self.total_amount))
+        conn.commit()
+        print(f"User {self.username} registered successfully!")
+
+    def login(self, username: str, password: str):
+        cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+        user = cursor.fetchone()
+        
+        if user:
+            print(f"Login successful! Welcome {username}!")
+            self.user_id, self.username, self.password, self.email, self.total_amount = user
+            return True
+        else:
+            print("Login failed! Check your username and password.")
+            return False
+    
+    def logout(self):
+        print(f"User {self.username} logged out successfully!")
+        self.user_id, self.username, self.password, self.email, self.total_amount = None, None, None, None, 0.0
+
 # ---------- Expense class ----------
 class Expense:
-    def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date = None, categories=None):
+    def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date = date.today(), categories=None):
         self.expense_id = expense_id
         self.user_id = user_id
         self.amount = amount
