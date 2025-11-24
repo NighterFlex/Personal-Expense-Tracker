@@ -1,6 +1,6 @@
 from datetime import date
 # from typing import Optional
-
+import os
 from db import db_connection
 
 # ---------- Global DB connection ----------
@@ -9,7 +9,7 @@ cursor = conn.cursor()
 
 # ---------- User class ----------
 class User:
-    def __init__(self, user_id: int, username: str, email: str, password: str, total_amount: float):
+    def __init__(self, user_id: int = 0 , username: str = "", email: str = "", password: str = "", total_amount: float = 0.0):
         self.user_id = user_id
         self.username = username
         self.password = password
@@ -22,7 +22,7 @@ class User:
         VALUES (%s, %s, %s, %s)
         """, (self.username, self.password, self.email, self.total_amount))
         conn.commit()
-        # Get the auto-generated user_id
+        #gettingg the auto-generated user id
         self.user_id = cursor.lastrowid
         print(f"User {self.username} registered successfully with ID {self.user_id}!")
 
@@ -40,7 +40,7 @@ class User:
     
     def logout(self):
         print(f"User {self.username} logged out successfully!")
-        self.user_id, self.username, self.password, self.email, self.total_amount = None, None, None, None, 0.0
+        self.user_id, self.username, self.password, self.email, self.total_amount = 0, "", "", "", 0.0
 
 
     def updateProfile(self, new_email : str, new_password : str):
@@ -79,7 +79,7 @@ class User:
             
 # ---------- Expense class ----------
 class Expense:
-    def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date = None, categories=None):
+    def __init__(self, expense_id: int, user_id: int, amount: float, category: str, description: str, expense_date: date | None = None, categories: list | None = None):
         self.expense_id = expense_id
         self.user_id = user_id
         self.amount = amount
@@ -156,28 +156,133 @@ class Budgeting:
         self.daily_spending = 0.0
 
 # ---------- Main Script ----------
+# ---------- Main Script ----------
 if __name__ == "__main__":
-    # Create ExpenseManager instance
+    import os
+
+    user = User()
     manager = ExpenseManager()
 
-    # Fetch categories from DB for validation
-    categories = manager.fetch_categories()
-    print("Available categories:", categories)
+    def clear():
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-    # Take user input for a new expense
-    expense_id = int(input("Enter expense ID: "))
-    user_id = int(input("Enter your user ID: "))
-    amount = float(input("Enter amount: "))
-    category = input("Enter category (must be one of above): ")
-    description = input("Enter description: ")
+    while True:
+        clear()
 
-    # Create Expense object, passing categories for validation
-    expense = Expense(expense_id, user_id, amount, category, description, categories=categories)
+        # ==========================
+        #   BEFORE LOGIN MENU
+        # ==========================
+        if not user.user_id:
+            print("\033[1;36m========================================\033[0m")
+            print("\033[1;32m       PERSONAL EXPENSE TRACKER\033[0m")
+            print("\033[1;36m========================================\033[0m")
+            print("1. Register")
+            print("2. Login")
+            print("0. Exit")
+            print("\033[1;36m========================================\033[0m")
 
-    # Add expense to SQL and in-memory list
-    manager.add_expense(expense)
+            choice = input("Choose an option: ")
 
-    # Display all expenses from SQL
-    print("\nAll Expenses in DB:")
-    for e in manager.fetch_all_expenses():
-        print(e)
+            # -------- REGISTER --------
+            if choice == "1":
+                clear()
+                print("--- Register ---")
+                username = input("Enter username: ")
+                email = input("Enter email: ")
+                password = input("Enter password: ")
+
+                new_user = User(username=username, email=email, password=password)
+                new_user.register()
+
+                print("\nRegistration successful! You may now login.")
+                input("\nPress Enter to return to menu...")
+
+            # -------- LOGIN --------
+            elif choice == "2":
+                clear()
+                print("--- Login ---")
+                u = input("Username: ")
+                p = input("Password: ")
+
+                if user.login(u, p):
+                    print("Login successful!")
+                input("\nPress Enter to continue...")
+
+            # -------- EXIT --------
+            elif choice == "0":
+                clear()
+                print("Goodbye!")
+                break
+
+            else:
+                print("Invalid option.")
+                input("Press Enter to continue...")
+
+        # ==========================
+        #   AFTER LOGIN MENU
+        # ==========================
+        else:
+            clear()
+            print("\033[1;35m========================================\033[0m")
+            print(f"   Logged in as: {user.username}")
+            print("\033[1;35m========================================\033[0m")
+            print("1. Add Expense")
+            print("2. View Profile")
+            print("3. View All Expenses")
+            print("4. Logout")
+            print("\033[1;35m========================================\033[0m")
+
+            choice = input("Choose an option: ")
+
+            # -------- ADD EXPENSE --------
+            if choice == "1":
+                clear()
+                print("--- Add Expense ---")
+                categories = manager.fetch_categories()
+                print("Available Categories:", categories)
+
+                try:
+                    expense_id = int(input("Expense ID: "))
+                    amount = float(input("Amount: "))
+                    category = input("Category: ")
+                    description = input("Description: ")
+
+                    expense = Expense(
+                        expense_id=expense_id,
+                        user_id=user.user_id,
+                        amount=amount,
+                        category=category,
+                        description=description,
+                        categories=categories
+                    )
+
+                    manager.add_expense(expense)
+                except Exception as e:
+                    print("Error:", e)
+
+                input("\nPress Enter to continue...")
+
+            # -------- VIEW PROFILE --------
+            elif choice == "2":
+                clear()
+                user.viewProfile()
+                input("\nPress Enter to continue...")
+
+            # -------- VIEW ALL EXPENSES --------
+            elif choice == "3":
+                clear()
+                print("--- All Expenses ---")
+                for e in manager.fetch_all_expenses():
+                    print(e)
+                input("\nPress Enter to continue...")
+
+            # -------- LOGOUT --------
+            elif choice == "4":
+                clear()
+                user.logout()
+                input("Press Enter to continue...")
+
+            else:
+                print("Invalid option.")
+                input("Press Enter to continue...")
+
