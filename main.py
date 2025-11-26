@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 # from typing import Optional
 import os
 from db import db_connection
@@ -9,7 +10,7 @@ cursor = conn.cursor()
 
 # ---------- User class ----------
 class User:
-    def __init__(self, user_id: int = 0 , username: str = "", email: str = "", password: str = "", total_amount: float = 0.0):
+    def __init__(self, user_id: int = 0 , username: str = "", password: str = "", email: str = "", total_amount: float = 0.0):
         self.user_id = user_id
         self.username = username
         self.password = password
@@ -75,6 +76,15 @@ class User:
             print("Email:", self.email)
             print("Total Amount:", self.total_amount)
             print("----------------------------\n")
+
+    
+    def add_balance(self, amount):
+        self.total_amount += Decimal(amount)
+        cursor.execute(
+            "UPDATE users SET total_amount = %s WHERE user_id = %s",
+            (self.total_amount, self.user_id)
+        )
+        conn.commit()
 
             
 # ---------- Expense class ----------
@@ -228,9 +238,10 @@ if __name__ == "__main__":
             print(f"   Logged in as: {user.username}")
             print("\033[1;35m========================================\033[0m")
             print("1. Add Expense")
-            print("2. View Profile")
-            print("3. View All Expenses")
-            print("4. Logout")
+            print("2. Add Balance")
+            print("3. View Profile")
+            print("4. View All Expenses")
+            print("5. Logout")
             print("\033[1;35m========================================\033[0m")
 
             choice = input("Choose an option: ")
@@ -262,15 +273,28 @@ if __name__ == "__main__":
                     print("Error:", e)
 
                 input("\nPress Enter to continue...")
+            
+            elif choice == "2":
+                clear()
+                print("--- Add Balance ---")
+                try:
+                    amount = float(input("Enter amount to add: "))
+                    user.add_balance(amount)
+                    print("Balance added successfully :3")
+                
+                except ValueError:
+                    print("Invalid input :(")
+
+                input("\nPress Enter to continue...")
 
             # -------- VIEW PROFILE --------
-            elif choice == "2":
+            elif choice == "3":
                 clear()
                 user.viewProfile()
                 input("\nPress Enter to continue...")
 
             # -------- VIEW ALL EXPENSES --------
-            elif choice == "3":
+            elif choice == "4":
                 clear()
                 print("--- All Expenses ---")
                 for e in manager.fetch_all_expenses():
@@ -278,7 +302,7 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # -------- LOGOUT --------
-            elif choice == "4":
+            elif choice == "5":
                 clear()
                 user.logout()
                 input("Press Enter to continue...")
