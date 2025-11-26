@@ -217,6 +217,7 @@ if __name__ == "__main__":
             else:
                 print("Invalid option.")
                 input("Press Enter to continue...")
+            
 
         # ==========================
         #   AFTER LOGIN MENU
