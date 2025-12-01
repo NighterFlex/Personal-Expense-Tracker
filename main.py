@@ -9,7 +9,7 @@ cursor = conn.cursor()
 
 # ---------- User class ----------
 class User:
-    def _init_(self, user_id=0, username="", password="", email="", total_amount=0.0):
+    def __init__(self, user_id=0, username="", password="", email="", total_amount=0.0):
         self.user_id = user_id
         self.username = username
         self.password = password
@@ -63,7 +63,7 @@ class User:
 
 # ---------- Expense class ----------
 class Expense:
-    def _init_(self, user_id, amount, category, description, expense_date=None):
+    def __init__(self, user_id, amount, category, description, expense_date=None):
         self.expense_id = None
         self.user_id = user_id
         self.amount = float(amount)
@@ -136,7 +136,7 @@ class ExpenseManager:
 
 # ---------- Budget Recommendation class ----------
 class Recommendation:
-    def _init_(self, total_amount):
+    def __init__(self, total_amount):
         self.total_amount = float(total_amount)
         self.essential = self.total_amount * 0.5
         self.lifestyle = self.total_amount * 0.3
@@ -163,7 +163,7 @@ class Recommendation:
         print("-------------------------------\n")
 
 # ---------- Main ----------
-if _name_ == "_main_":
+if __name__ == "__main__":
     user = User()
     manager = ExpenseManager()
 
