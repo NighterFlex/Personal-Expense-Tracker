@@ -20,7 +20,7 @@ class User:
         cursor.execute("""
         INSERT INTO users (username, password, email, total_amount)
         VALUES (%s, %s, %s, %s)
-        """, (self.username, self.password, self.email, self.total_amount))
+        """, (self.username, self.password, self.email, self.total_amount))  # type: ignore
         conn.commit()
         self.user_id = cursor.lastrowid
         print(f"User {self.username} registered successfully!")
@@ -30,7 +30,7 @@ class User:
         user = cursor.fetchone()
         if user:
             self.user_id, self.username, self.password, self.email, self.total_amount = user
-            self.total_amount = float(self.total_amount)
+            self.total_amount = float(self.total_amount)  # type: ignore
             return True
         return False
 
@@ -39,10 +39,10 @@ class User:
         self.user_id, self.username, self.password, self.email, self.total_amount = 0, "", "", "", 0.0
 
     def add_balance(self, amount):
-        cursor.execute("UPDATE users SET total_amount = total_amount + %s WHERE user_id=%s", (float(amount), self.user_id))
+        cursor.execute("UPDATE users SET total_amount = total_amount + %s WHERE user_id=%s", (float(amount), self.user_id))  # type: ignore
         conn.commit()
-        cursor.execute("SELECT total_amount FROM users WHERE user_id=%s", (self.user_id,))
-        self.total_amount = float(cursor.fetchone()[0])
+        cursor.execute("SELECT total_amount FROM users WHERE user_id=%s", (self.user_id,)) # type: ignore
+        self.total_amount = float(cursor.fetchone()[0])     # type: ignore
         if self.total_amount == int(self.total_amount):
             amt_display = f"{int(self.total_amount):,}"
         else:
@@ -50,8 +50,8 @@ class User:
         print(f"Balance updated! Total: {amt_display}")
 
     def view_profile(self):
-        if self.total_amount == int(self.total_amount):
-            amt_display = f"{int(self.total_amount):,}"
+        if self.total_amount == int(self.total_amount):  # type: ignore
+            amt_display = f"{int(self.total_amount):,}"  # type: ignore
         else:
             amt_display = f"{self.total_amount:,.2f}"
         print("\n------- USER SUMMARY -------")
@@ -75,7 +75,7 @@ class Expense:
 class ExpenseManager:
     def fetch_categories(self):
         cursor.execute("SELECT category_name FROM categories")
-        return [row[0] for row in cursor.fetchall()]
+        return [row[0] for row in cursor.fetchall()]            # type: ignore
 
     def add_expense(self, expense: Expense):
         cursor.execute("""
@@ -83,7 +83,7 @@ class ExpenseManager:
             VALUES (%s, %s, %s, %s, %s)
         """, (expense.user_id, float(expense.amount), expense.expense_date, expense.category, expense.description))
         conn.commit()
-        expense.expense_id = cursor.lastrowid
+        expense.expense_id = cursor.lastrowid    # type: ignore
         print(f"Expense added successfully! (ID: {expense.expense_id})")
 
     def view_all(self, user_id):
@@ -264,10 +264,10 @@ if __name__ == "__main__":
                 print("--- All Expenses ---")
                 for expense in manager.view_all(user.user_id):
                     expense_id, user_id, amount, expense_date, category, description = expense
-                    if float(amount) == int(amount):
-                        amt_display = f"{int(amount):,}"
+                    if float(amount) == int(amount):    # type: ignore
+                        amt_display = f"{int(amount):,}"    # type: ignore
                     else:
-                        amt_display = f"{float(amount):,.2f}"
+                        amt_display = f"{float(amount):,.2f}"    # type: ignore
                     print(f"{expense_id}, {user_id}, {amt_display}, {expense_date}, {category}, {description}")
                 input("\nPress Enter to continue...")
 
@@ -278,10 +278,10 @@ if __name__ == "__main__":
                 expense = manager.search_expense(eid, user.user_id)
                 if expense:
                     expense_id, user_id, amount, expense_date, category, description = expense
-                    if float(amount) == int(amount):
-                        amt_display = f"{int(amount):,}"
+                    if float(amount) == int(amount):    # type: ignore
+                        amt_display = f"{int(amount):,}"   # type: ignore
                     else:
-                        amt_display = f"{float(amount):,.2f}"
+                        amt_display = f"{float(amount):,.2f}"    # type: ignore
                     print(f"{expense_id}, {user_id}, {amt_display}, {expense_date}, {category}, {description}")
                 else:
                     print("Expense not found")
@@ -315,10 +315,10 @@ if __name__ == "__main__":
                 cat = input("Category: ")
                 for expense in manager.filter_by_category(user.user_id, cat):
                     expense_id, user_id, amount, expense_date, category, description = expense
-                    if float(amount) == int(amount):
-                        amt_display = f"{int(amount):,}"
-                    else:
-                        amt_display = f"{float(amount):,.2f}"
+                    if float(amount) == int(amount):      # type: ignore
+                        amt_display = f"{int(amount):,}"    # type: ignore
+                    else:  
+                        amt_display = f"{float(amount):,.2f}"   # type: ignore
                     print(f"{expense_id}, {user_id}, {amt_display}, {expense_date}, {category}, {description}")
                 input("\nPress Enter to continue...")
 
@@ -329,10 +329,10 @@ if __name__ == "__main__":
                 end = input("End Date (YYYY-MM-DD): ")
                 for expense in manager.filter_by_date_range(user.user_id, start, end):
                     expense_id, user_id, amount, expense_date, category, description = expense
-                    if float(amount) == int(amount):
-                        amt_display = f"{int(amount):,}"
+                    if float(amount) == int(amount):       # type: ignore
+                        amt_display = f"{int(amount):,}"        # type: ignore
                     else:
-                        amt_display = f"{float(amount):,.2f}"
+                        amt_display = f"{float(amount):,.2f}"    # type: ignore
                     print(f"{expense_id}, {user_id}, {amt_display}, {expense_date}, {category}, {description}")
                 input("\nPress Enter to continue...")
 
@@ -344,37 +344,37 @@ if __name__ == "__main__":
                 print("\nDaily Report:")
                 print("Date        | Amount")
                 for d, amt in manager.daily_report(user.user_id):
-                    if float(amt) == int(amt):
-                        amt_display = f"{int(amt):,}"
+                    if float(amt) == int(amt):    # type: ignore
+                        amt_display = f"{int(amt):,}"    # type: ignore
                     else:
-                        amt_display = f"{float(amt):,.2f}"
+                        amt_display = f"{float(amt):,.2f}"     # type: ignore
                     print(f"{d} | {amt_display}")
 
                 print("\nWeekly Report:")
                 print("Year | Week | Amount")
                 for year, week, amt in manager.weekly_report(user.user_id):
-                    if float(amt) == int(amt):
-                        amt_display = f"{int(amt):,}"
+                    if float(amt) == int(amt):          # type: ignore
+                        amt_display = f"{int(amt):,}"      # type: ignore
                     else:
-                        amt_display = f"{float(amt):,.2f}"
+                        amt_display = f"{float(amt):,.2f}"      # type: ignore
                     print(f"{year} | {week} | {amt_display}")
 
                 print("\nMonthly Report:")
                 print("Year-Month | Amount")
                 for year, month, amt in manager.monthly_report(user.user_id):
-                    if float(amt) == int(amt):
-                        amt_display = f"{int(amt):,}"
+                    if float(amt) == int(amt):      # type: ignore
+                        amt_display = f"{int(amt):,}"         # type: ignore
                     else:
-                        amt_display = f"{float(amt):,.2f}"
+                        amt_display = f"{float(amt):,.2f}"        # type: ignore
                     print(f"{year}-{month:02d} | {amt_display}")
 
                 print("\nYearly Report:")
                 print("Year | Amount")
                 for year, amt in manager.yearly_report(user.user_id):
-                    if float(amt) == int(amt):
-                        amt_display = f"{int(amt):,}"
+                    if float(amt) == int(amt):       # type: ignore
+                        amt_display = f"{int(amt):,}"      # type: ignore
                     else:
-                        amt_display = f"{float(amt):,.2f}"
+                        amt_display = f"{float(amt):,.2f}"       # type: ignore
                     print(f"{year} | {amt_display}")
                 input("\nPress Enter to continue...")
 
