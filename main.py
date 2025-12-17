@@ -1,7 +1,7 @@
 from datetime import date
 import os
 from db import db_connection
-from decimal import Decimal
+
 
 # ---------- Global DB connection ----------
 conn = db_connection()
@@ -134,8 +134,8 @@ class ExpenseManager:
         cursor.execute("SELECT YEAR(expense_date), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date) ORDER BY YEAR(expense_date)", (user_id,))
         return cursor.fetchall()
 
-# ---------- Budget Recommendation class ----------
-class Recommendation:
+# ---------- Budget class ----------
+class Budget:
     def __init__(self, total_amount):
         self.total_amount = float(total_amount)
         self.essential = self.total_amount * 0.5
@@ -221,23 +221,30 @@ if __name__ == "__main__":
             print("="*40)
             print(f"       Logged in as: {user.username}       ")
             print("="*40)
-            print("1. Add Expense")
-            print("2. View All Expenses")
-            print("3. Search Expense")
-            print("4. Update Expense")
-            print("5. Delete Expense")
-            print("6. Filter by Category")
-            print("7. Filter by Date Range")
-            print("8. Reports")
-            print("9. Budget Recommendation")
-            print("10. Add Balance")
+            print("1. Add Balance")
+            print("2. Add Expense")
+            print("3. View All Expenses")
+            print("4. Search Expense")
+            print("5. Update Expense")
+            print("6. Delete Expense")
+            print("7. Filter by Category")
+            print("8. Filter by Date Range")
+            print("9. Reports")
+            print("10. Budget Recommendation")
             print("11. View Profile")
             print("12. Logout")
             print("="*40)
             choice = input("Choose an option: ")
 
-            # ---------- Add Expense ----------
+            # ---------- Add Balance ----------
             if choice == "1":
+                clear()
+                amt = float(input("Amount to add: "))
+                user.add_balance(amt)
+                input("\nPress Enter to continue...")
+
+            # ---------- Add Expense ----------
+            elif choice == "2":
                 clear()
                 print("--- Add Expense ---")
                 categories = manager.fetch_categories()
@@ -259,7 +266,7 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- View All Expenses ----------
-            elif choice == "2":
+            elif choice == "3":
                 clear()
                 print("--- All Expenses ---")
                 for expense in manager.view_all(user.user_id):
@@ -272,7 +279,7 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- Search Expense ----------
-            elif choice == "3":
+            elif choice == "4":
                 clear()
                 eid = int(input("Expense ID to search: "))
                 expense = manager.search_expense(eid, user.user_id)
@@ -288,7 +295,7 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- Update Expense ----------
-            elif choice == "4":
+            elif choice == "5":
                 clear()
                 eid = int(input("Expense ID to update: "))
                 amt = input("New Amount (blank to skip): ")
@@ -303,14 +310,14 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- Delete Expense ----------
-            elif choice == "5":
+            elif choice == "6":
                 clear()
                 eid = int(input("Expense ID to delete: "))
                 manager.delete_expense(eid, user.user_id)
                 input("\nPress Enter to continue...")
 
             # ---------- Filter by Category ----------
-            elif choice == "6":
+            elif choice == "7":
                 clear()
                 cat = input("Category: ")
                 for expense in manager.filter_by_category(user.user_id, cat):
@@ -323,7 +330,7 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- Filter by Date Range ----------
-            elif choice == "7":
+            elif choice == "8":
                 clear()
                 start = input("Start Date (YYYY-MM-DD): ")
                 end = input("End Date (YYYY-MM-DD): ")
@@ -337,7 +344,7 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- Reports ----------
-            elif choice == "8":
+            elif choice == "9":
                 clear()
                 print("--- Reports ---")
 
@@ -379,17 +386,10 @@ if __name__ == "__main__":
                 input("\nPress Enter to continue...")
 
             # ---------- Budget Recommendation ----------
-            elif choice == "9":
-                clear()
-                budget = Recommendation(user.total_amount)
-                budget.show()
-                input("\nPress Enter to continue...")
-
-            # ---------- Add Balance ----------
             elif choice == "10":
                 clear()
-                amt = float(input("Amount to add: "))
-                user.add_balance(amt)
+                budget = Budget(user.total_amount)
+                budget.show()
                 input("\nPress Enter to continue...")
 
             # ---------- View Profile ----------
