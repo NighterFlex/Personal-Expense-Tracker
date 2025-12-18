@@ -186,6 +186,7 @@ class ExpenseManager:  # Manages all expense-related database operations
         )
         return cursor.fetchall()  # Return yearly totals
 
+
 # ---------- Budget class ----------
 # This class calculates a 50/30/20 budget recommendation
 class Budget:
