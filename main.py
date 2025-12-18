@@ -1,57 +1,59 @@
-from datetime import date
-import os
-from db import db_connection
+from datetime import date      #to get today's date
+import os            #to clear screen
+from db import db_connection                  #for db connection
 
 
-# ---------- Global DB connection ----------
+# ---------- DB connection ----------
 conn = db_connection()
-cursor = conn.cursor()
+cursor = conn.cursor()              # cursor for executing SQL queries
 
 # ---------- User class ----------
 class User:
-    def __init__(self, user_id=0, username="", password="", email="", total_amount=0.0):
-        self.user_id = user_id
-        self.username = username
-        self.password = password
-        self.email = email
-        self.total_amount = float(total_amount)
+    def __init__(self, user_id=0, username="", password="", email="", total_amount=0.0):    #contructor
+        self.user_id = user_id                                                            # store user ID
+        self.username = username                                                          # store username
+        self.password = password                                                            # dtore password
+        self.email = email                                                                 # store email
+        self.total_amount = float(total_amount)  # essure balance is float
 
-    def register(self):
+    def register(self):              # register new user
+        # running SQL INSER query
         cursor.execute("""
         INSERT INTO users (username, password, email, total_amount)
         VALUES (%s, %s, %s, %s)
-        """, (self.username, self.password, self.email, self.total_amount))  # type: ignore
-        conn.commit()
-        self.user_id = cursor.lastrowid
-        print(f"User {self.username} registered successfully!")
+        """, (self.username, self.password, self.email, self.total_amount))  # type: ignore    # Ignore static type checker warnings for cursor.execute
+        conn.commit()                                                        # Save changes to database
+        self.user_id = cursor.lastrowid                                           # gt auto generated user id
+        print(f"User {self.username} registered successfully!")                  #success
 
     def login(self, username, password):
-        cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
-        user = cursor.fetchone()
+        cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))       # execute SELECT query and credentials tuple
+        user = cursor.fetchone()                                                                          # fetch one matching record
+
         if user:
-            self.user_id, self.username, self.password, self.email, self.total_amount = user
-            self.total_amount = float(self.total_amount)  # type: ignore
-            return True
-        return False
+            self.user_id, self.username, self.password, self.email, self.total_amount = user         # uunpack DB row
+            self.total_amount = float(self.total_amount)  # type: ignore                          # cnvert Decimal to float
+            return True                                                                   # login successful
+        return False                                                                             # login failed
 
     def logout(self):
         print(f"User {self.username} logged out successfully!")
-        self.user_id, self.username, self.password, self.email, self.total_amount = 0, "", "", "", 0.0
+        self.user_id, self.username, self.password, self.email, self.total_amount = 0, "", "", "", 0.0                   # reset data
 
-    def add_balance(self, amount):
+    def add_balance(self, amount):                                       # add balance to user account
         cursor.execute("UPDATE users SET total_amount = total_amount + %s WHERE user_id=%s", (float(amount), self.user_id))  # type: ignore
-        conn.commit()
+        conn.commit()                                                                                    
         cursor.execute("SELECT total_amount FROM users WHERE user_id=%s", (self.user_id,)) # type: ignore
         self.total_amount = float(cursor.fetchone()[0])     # type: ignore
         if self.total_amount == int(self.total_amount):
-            amt_display = f"{int(self.total_amount):,}"
+            amt_display = f"{int(self.total_amount):,}"                                           #single rlement tuple (comma is required) python things
         else:
             amt_display = f"{self.total_amount:,.2f}"
         print(f"Balance updated! Total: {amt_display}")
 
     def view_profile(self):
-        if self.total_amount == int(self.total_amount):  # type: ignore
-            amt_display = f"{int(self.total_amount):,}"  # type: ignore
+        if self.total_amount == int(self.total_amount):  # type: ignore                         #check if whole number
+            amt_display = f"{int(self.total_amount):,}"  # type: ignore                      #format without decimals
         else:
             amt_display = f"{self.total_amount:,.2f}"
         print("\n------- USER SUMMARY -------")
