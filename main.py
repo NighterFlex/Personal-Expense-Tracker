@@ -64,95 +64,154 @@ class User:
         print("----------------------------\n")
 
 # ---------- Expense class ----------
+# This class represents a single expense entry made by a user
 class Expense:
     def __init__(self, user_id, amount, category, description, expense_date=None):
+        # Expense ID will be assigned after insertion into database
         self.expense_id = None
+        # ID of the user who made this expense
         self.user_id = user_id
+        # Expense amount (converted to float for safety)
         self.amount = float(amount)
+        # Category name of the expense
         self.category = category
+        # Optional description of the expense
         self.description = description
+        # Expense date (defaults to today's date if not provided)
         self.expense_date = expense_date if expense_date else date.today()
 
-# ---------- ExpenseManager class ----------
-class ExpenseManager:
-    def fetch_categories(self):
-        cursor.execute("SELECT category_name FROM categories")
-        return [row[0] for row in cursor.fetchall()]            # type: ignore
 
-    def add_expense(self, expense: Expense):
+# ---------- ExpenseManager class ----------
+class ExpenseManager:  # Manages all expense-related database operations
+
+    def fetch_categories(self):  # Fetch all category names from database
+        cursor.execute("SELECT category_name FROM categories")  # SQL query to get categories
+        return [row[0] for row in cursor.fetchall()]  # Return category list
+
+    def add_expense(self, expense: Expense):  # Add a new expense record
         cursor.execute("""
             INSERT INTO expenses (user_id, amount, expense_date, category, description)
             VALUES (%s, %s, %s, %s, %s)
-        """, (expense.user_id, float(expense.amount), expense.expense_date, expense.category, expense.description))
-        conn.commit()
-        expense.expense_id = cursor.lastrowid    # type: ignore
-        print(f"Expense added successfully! (ID: {expense.expense_id})")
+        """, (
+            expense.user_id,          # User who added the expense
+            float(expense.amount),    # Expense amount
+            expense.expense_date,     # Date of expense
+            expense.category,         # Expense category
+            expense.description       # Optional description
+        ))
+        conn.commit()  # Save changes to database
+        expense.expense_id = cursor.lastrowid  # Store generated expense ID
+        print(f"Expense added successfully! (ID: {expense.expense_id})")  # Confirmation message
 
-    def view_all(self, user_id):
-        cursor.execute("SELECT * FROM expenses WHERE user_id=%s ORDER BY expense_date", (user_id,))
-        return cursor.fetchall()
+    def view_all(self, user_id):  # View all expenses for a user
+        cursor.execute(
+            "SELECT * FROM expenses WHERE user_id=%s ORDER BY expense_date",
+            (user_id,)
+        )  # Fetch user expenses sorted by date
+        return cursor.fetchall()  # Return all records
 
-    def search_expense(self, expense_id, user_id):
-        cursor.execute("SELECT * FROM expenses WHERE expense_id=%s AND user_id=%s", (expense_id, user_id))
-        return cursor.fetchone()
+    def search_expense(self, expense_id, user_id):  # Search expense by ID
+        cursor.execute(
+            "SELECT * FROM expenses WHERE expense_id=%s AND user_id=%s",
+            (expense_id, user_id)
+        )  # Ensure expense belongs to user
+        return cursor.fetchone()  # Return single expense or None
 
-    def update_expense(self, expense_id, user_id, amount=None, category=None, description=None):
-        if amount is not None:
-            cursor.execute("UPDATE expenses SET amount=%s WHERE expense_id=%s AND user_id=%s", (float(amount), expense_id, user_id))
-        if category:
-            cursor.execute("UPDATE expenses SET category=%s WHERE expense_id=%s AND user_id=%s", (category, expense_id, user_id))
-        if description:
-            cursor.execute("UPDATE expenses SET description=%s WHERE expense_id=%s AND user_id=%s", (description, expense_id, user_id))
-        conn.commit()
-        print("Expense updated successfully!")
+    def update_expense(self, expense_id, user_id, amount=None, category=None, description=None):  # Update expense details
+        if amount is not None:  # Update amount if provided
+            cursor.execute(
+                "UPDATE expenses SET amount=%s WHERE expense_id=%s AND user_id=%s",
+                (float(amount), expense_id, user_id)
+            )
+        if category:  # Update category if provided
+            cursor.execute(
+                "UPDATE expenses SET category=%s WHERE expense_id=%s AND user_id=%s",
+                (category, expense_id, user_id)
+            )
+        if description:  # Update description if provided
+            cursor.execute(
+                "UPDATE expenses SET description=%s WHERE expense_id=%s AND user_id=%s",
+                (description, expense_id, user_id)
+            )
+        conn.commit()  # Save all updates
+        print("Expense updated successfully!")  # Confirmation message
 
-    def delete_expense(self, expense_id, user_id):
-        cursor.execute("DELETE FROM expenses WHERE expense_id=%s AND user_id=%s", (expense_id, user_id))
-        conn.commit()
-        print("Expense deleted successfully!")
+    def delete_expense(self, expense_id, user_id):  # Delete an expense
+        cursor.execute(
+            "DELETE FROM expenses WHERE expense_id=%s AND user_id=%s",
+            (expense_id, user_id)
+        )  # Ensure user owns the expense
+        conn.commit()  # Save deletion
+        print("Expense deleted successfully!")  # Confirmation message
 
-    def filter_by_category(self, user_id, category):
-        cursor.execute("SELECT * FROM expenses WHERE user_id=%s AND category=%s ORDER BY expense_date", (user_id, category))
-        return cursor.fetchall()
+    def filter_by_category(self, user_id, category):  # Filter expenses by category
+        cursor.execute(
+            "SELECT * FROM expenses WHERE user_id=%s AND category=%s ORDER BY expense_date",
+            (user_id, category)
+        )
+        return cursor.fetchall()  # Return filtered results
 
-    def filter_by_date_range(self, user_id, start_date, end_date):
-        cursor.execute("SELECT * FROM expenses WHERE user_id=%s AND expense_date BETWEEN %s AND %s ORDER BY expense_date", (user_id, start_date, end_date))
-        return cursor.fetchall()
+    def filter_by_date_range(self, user_id, start_date, end_date):  # Filter expenses by date range
+        cursor.execute(
+            "SELECT * FROM expenses WHERE user_id=%s AND expense_date BETWEEN %s AND %s ORDER BY expense_date",
+            (user_id, start_date, end_date)
+        )
+        return cursor.fetchall()  # Return filtered expenses
 
-    # ---------- Reports ----------
-    def daily_report(self, user_id):
-        cursor.execute("SELECT expense_date, SUM(amount) FROM expenses WHERE user_id=%s GROUP BY expense_date ORDER BY expense_date DESC", (user_id,))
-        return cursor.fetchall()
+    def daily_report(self, user_id):  # Generate daily expense report
+        cursor.execute(
+            "SELECT expense_date, SUM(amount) FROM expenses WHERE user_id=%s GROUP BY expense_date ORDER BY expense_date DESC",
+            (user_id,)
+        )
+        return cursor.fetchall()  # Return daily totals
 
-    def weekly_report(self, user_id):
-        cursor.execute("SELECT YEAR(expense_date), WEEK(expense_date,1), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date), WEEK(expense_date,1) ORDER BY YEAR(expense_date), WEEK(expense_date,1)", (user_id,))
-        return cursor.fetchall()
+    def weekly_report(self, user_id):  # Generate weekly expense report
+        cursor.execute(
+            "SELECT YEAR(expense_date), WEEK(expense_date,1), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date), WEEK(expense_date,1)",
+            (user_id,)
+        )
+        return cursor.fetchall()  # Return weekly totals
 
-    def monthly_report(self, user_id):
-        cursor.execute("SELECT YEAR(expense_date), MONTH(expense_date), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date), MONTH(expense_date) ORDER BY YEAR(expense_date), MONTH(expense_date)", (user_id,))
-        return cursor.fetchall()
+    def monthly_report(self, user_id):  # Generate monthly expense report
+        cursor.execute(
+            "SELECT YEAR(expense_date), MONTH(expense_date), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date), MONTH(expense_date)",
+            (user_id,)
+        )
+        return cursor.fetchall()  # Return monthly totals
 
-    def yearly_report(self, user_id):
-        cursor.execute("SELECT YEAR(expense_date), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date) ORDER BY YEAR(expense_date)", (user_id,))
-        return cursor.fetchall()
+    def yearly_report(self, user_id):  # Generate yearly expense report
+        cursor.execute(
+            "SELECT YEAR(expense_date), SUM(amount) FROM expenses WHERE user_id=%s GROUP BY YEAR(expense_date)",
+            (user_id,)
+        )
+        return cursor.fetchall()  # Return yearly totals
 
 # ---------- Budget class ----------
+# This class calculates a 50/30/20 budget recommendation
 class Budget:
     def __init__(self, total_amount):
+        # Total available balance
         self.total_amount = float(total_amount)
+        # Allocate 50% to essentials
         self.essential = self.total_amount * 0.5
+        # Allocate 30% to lifestyle
         self.lifestyle = self.total_amount * 0.3
+        # Allocate 20% to savings
         self.savings = self.total_amount * 0.2
 
+    # Display formatted budget breakdown
     def show(self):
+        # Format essentials amount
         if self.essential == int(self.essential):
             e = f"{int(self.essential):,}"
         else:
             e = f"{self.essential:,.2f}"
+        # Format lifestyle amount
         if self.lifestyle == int(self.lifestyle):
             l = f"{int(self.lifestyle):,}"
         else:
             l = f"{self.lifestyle:,.2f}"
+        # Format savings amount
         if self.savings == int(self.savings):
             s = f"{int(self.savings):,}"
         else:
@@ -164,16 +223,22 @@ class Budget:
         print(f"Savings (20%): {s}")
         print("-------------------------------\n")
 
+
 # ---------- Main ----------
+# Entry point of the application
 if __name__ == "__main__":
+    # Create user and expense manager objects
     user = User()
     manager = ExpenseManager()
 
+    # Clear terminal screen (Windows/Linux compatible)
     def clear():
         os.system('cls' if os.name == 'nt' else 'clear')
 
+    # Main application loop
     while True:
         clear()
+        # If user is not logged in
         if not user.user_id:
             print("="*40)
             print("       PERSONAL EXPENSE TRACKER       ")
@@ -183,12 +248,14 @@ if __name__ == "__main__":
             print("3. Exit")
             print("="*40)
             choice = input("Choose an option: ")
+
+            # ---------- Register ----------
             if choice == "1":
                 clear()
                 print("--- Register ---")
                 username = input("Username: ")
 
-                # Email validation
+                # Email validation loop
                 while True:
                     email = input("Email: ")
                     if "@" in email and "." in email:
@@ -201,6 +268,7 @@ if __name__ == "__main__":
                 new_user.register()
                 input("\nPress Enter to return to menu...")
 
+            # ---------- Login ----------
             elif choice == "2":
                 clear()
                 print("--- Login ---")
@@ -211,13 +279,19 @@ if __name__ == "__main__":
                 else:
                     print("Login failed! Check username/password.")
                 input("\nPress Enter to continue...")
+
+            # ---------- Exit ----------
             elif choice == "3":
                 clear()
                 print("Goodbye!")
                 break
+
+            # Invalid option handling
             else:
                 print("Invalid option!")
                 input("Press Enter to continue...")
+
+        # ---------- Logged-in Menu ----------
         else:
             clear()
             print("="*40)
@@ -326,7 +400,7 @@ if __name__ == "__main__":
                     expense_id, user_id, amount, expense_date, category, description = expense
                     if float(amount) == int(amount):      # type: ignore
                         amt_display = f"{int(amount):,}"    # type: ignore
-                    else:  
+                    else:
                         amt_display = f"{float(amount):,.2f}"   # type: ignore
                     print(f"{expense_id}, {user_id}, {amt_display}, {expense_date}, {category}, {description}")
                 input("\nPress Enter to continue...")
