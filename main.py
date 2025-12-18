@@ -52,8 +52,13 @@ class User:
         print(f"Balance updated! Total: {amt_display}")
 
     def view_profile(self):
-        if self.total_amount == int(self.total_amount):  # type: ignore                         #check if whole number
-            amt_display = f"{int(self.total_amount):,}"  # type: ignore                      #format without decimals
+        # Refresh balance from database to get the most current value
+        cursor.execute("SELECT total_amount FROM users WHERE user_id=%s", (self.user_id,)) result = cursor.fetchone() #type: ignore
+        if result:
+            self.total_amount = float(result[0])  # type: ignore
+        
+        if self.total_amount == int(self.total_amount):  # type: ignore
+            amt_display = f"{int(self.total_amount):,}"  # type: ignore
         else:
             amt_display = f"{self.total_amount:,.2f}"
         print("\n------- USER SUMMARY -------")
@@ -86,7 +91,7 @@ class ExpenseManager:  # Manages all expense-related database operations
 
     def fetch_categories(self):  # Fetch all category names from database
         cursor.execute("SELECT category_name FROM categories")  # SQL query to get categories
-        return [row[0] for row in cursor.fetchall()]  # Return category list
+        return [row[0] for row in cursor.fetchall()]  #type: ignore  # Return list of category names
 
     def add_expense(self, expense: Expense):  # Add a new expense record
         cursor.execute("""
@@ -99,8 +104,11 @@ class ExpenseManager:  # Manages all expense-related database operations
             expense.category,         # Expense category
             expense.description       # Optional description
         ))
+
+            #deduct the expense amount from user's total balance
+        cursor.execute("UPDATE users SET total_amount = total_amount - %s WHERE user_id=%s", (float(expense.amount), expense.user_id))
         conn.commit()  # Save changes to database
-        expense.expense_id = cursor.lastrowid  # Store generated expense ID
+        expense.expense_id = cursor.lastrowid #type: ignore  # Store generated expense ID    
         print(f"Expense added successfully! (ID: {expense.expense_id})")  # Confirmation message
 
     def view_all(self, user_id):  # View all expenses for a user
@@ -117,34 +125,49 @@ class ExpenseManager:  # Manages all expense-related database operations
         )  # Ensure expense belongs to user
         return cursor.fetchone()  # Return single expense or None
 
-    def update_expense(self, expense_id, user_id, amount=None, category=None, description=None):  # Update expense details
-        if amount is not None:  # Update amount if provided
-            cursor.execute(
-                "UPDATE expenses SET amount=%s WHERE expense_id=%s AND user_id=%s",
-                (float(amount), expense_id, user_id)
-            )
-        if category:  # Update category if provided
-            cursor.execute(
-                "UPDATE expenses SET category=%s WHERE expense_id=%s AND user_id=%s",
-                (category, expense_id, user_id)
-            )
-        if description:  # Update description if provided
-            cursor.execute(
-                "UPDATE expenses SET description=%s WHERE expense_id=%s AND user_id=%s",
-                (description, expense_id, user_id)
-            )
-        conn.commit()  # Save all updates
-        print("Expense updated successfully!")  # Confirmation message
+    def update_expense(self, expense_id, user_id, amount=None, category=None, description=None):
+        if amount is not None:
+            # Get the old amount first
+            cursor.execute("SELECT amount FROM expenses WHERE expense_id=%s AND user_id=%s", (expense_id, user_id))
+            result = cursor.fetchone()
+            if result:
+                old_amount = float(result[0])  # type: ignore
+                difference = float(amount) - old_amount
+                
+                # Update expense amount
+                cursor.execute("UPDATE expenses SET amount=%s WHERE expense_id=%s AND user_id=%s", 
+                            (float(amount), expense_id, user_id))
+                # Adjust user balance by the difference
+                cursor.execute("UPDATE users SET total_amount = total_amount - %s WHERE user_id=%s", 
+                            (difference, user_id))
+        
+        if category:
+            cursor.execute("UPDATE expenses SET category=%s WHERE expense_id=%s AND user_id=%s", 
+                        (category, expense_id, user_id))
+        if description:
+            cursor.execute("UPDATE expenses SET description=%s WHERE expense_id=%s AND user_id=%s", 
+                        (description, expense_id, user_id))
+        conn.commit()
+        print("Expense updated successfully!")
 
-    def delete_expense(self, expense_id, user_id):  # Delete an expense
-        cursor.execute(
-            "DELETE FROM expenses WHERE expense_id=%s AND user_id=%s",
-            (expense_id, user_id)
-        )  # Ensure user owns the expense
-        conn.commit()  # Save deletion
-        print("Expense deleted successfully!")  # Confirmation message
+    def delete_expense(self, expense_id, user_id):
+        # First get the expense amount before deleting
+        cursor.execute("SELECT amount FROM expenses WHERE expense_id=%s AND user_id=%s", (expense_id, user_id))
+        result = cursor.fetchone()
+        
+        if result:
+            amount = float(result[0])  # type: ignore
+            #delete the expense
+            cursor.execute("DELETE FROM expenses WHERE expense_id=%s AND user_id=%s", (expense_id, user_id))
+            # asd the amount back to user's balance
+            cursor.execute("UPDATE users SET total_amount = total_amount + %s WHERE user_id=%s", (amount, user_id))
+            conn.commit()
+            print("Expense deleted successfully!")
+            print(f"Balance restored: {amount:,.2f}")
+        else:
+            print("Expense not found!")
 
-    def filter_by_category(self, user_id, category):  # Filter expenses by category
+    def filter_by_category(self, user_id, category):  #dilter expenses by category
         cursor.execute(
             "SELECT * FROM expenses WHERE user_id=%s AND category=%s ORDER BY expense_date",
             (user_id, category)
@@ -340,6 +363,16 @@ if __name__ == "__main__":
                     exp_date = date.today()
                 exp = Expense(user.user_id, amt, cat, desc, exp_date)
                 manager.add_expense(exp)
+                
+                # Refresh user's balance from database
+                cursor.execute("SELECT total_amount FROM users WHERE user_id=%s", (user.user_id,)) user.total_amount = float(cursor.fetchone()[0])  # type: ignore
+                
+                if user.total_amount == int(user.total_amount):
+                    amt_display = f"{int(user.total_amount):,}"
+                else:
+                    amt_display = f"{user.total_amount:,.2f}"
+                print(f"Current Balance: {amt_display}")
+                
                 input("\nPress Enter to continue...")
 
             # ---------- View All Expenses ----------
